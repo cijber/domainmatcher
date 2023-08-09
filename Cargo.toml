@@ -1,0 +1,11 @@
+[package]
+name = "eater_domainmatcher"
+description = "light weight and fast (probably) domain pattern matcher"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+smallvec = { optional = true, version = "1" }
+
+[features]
+smallvec = ["dep:smallvec"]
