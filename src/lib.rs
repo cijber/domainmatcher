@@ -204,6 +204,16 @@ pub struct InvalidToken<'a> {
     full_string: Cow<'a, str>,
 }
 
+impl InvalidToken<'_> {
+    pub fn to_owned(&self) -> InvalidToken<'static> {
+        InvalidToken {
+            position: self.position,
+            unexpected_token: Cow::Owned(self.unexpected_token.as_ref().to_owned()),
+            full_string: Cow::Owned(self.full_string.as_ref().to_owned()),
+        }
+    }
+}
+
 impl Display for InvalidToken<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Invalid token {:?} at position {} in pattern  {:?}", self.unexpected_token, self.position, self.full_string)
