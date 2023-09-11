@@ -1,9 +1,10 @@
 [package]
 name = "eater_domainmatcher"
 description = "light weight and fast (probably) domain pattern matcher"
-version = "0.1.1"
+version = "0.1.2"
 license = "MIT"
 edition = "2021"
+repository = "https://github.com/cijber/domainmatcher/"
 
 [dependencies]
 smallvec = { optional = true, version = "1" }
