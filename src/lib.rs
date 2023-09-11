@@ -57,9 +57,20 @@ impl<'a, const SPLITTER: char> DomainPattern<'a, SPLITTER> {
         let mut stack: StackVec = Default::default();
         let mut next_stack: StackVec = Default::default();
 
-        stack.push(0);
+        let mut next_idx = 0;
+        stack.push(next_idx);
 
         let mut saw_last = false;
+        while let DomainPatternPart::Wildcard(DomainPatternWildcard { optional: true, .. }) = &self.steps[next_idx] {
+            let jump_idx = next_idx + 1;
+            if jump_idx == self.steps.len() {
+                saw_last = true;
+                break;
+            }
+
+            stack.push(jump_idx);
+            next_idx = jump_idx;
+        }
 
         for label in domain.split(SPLITTER) {
             if label == "" {
@@ -323,5 +334,57 @@ mod tests {
 
         let pattern: DomainPattern = "**+.+.**+".try_into().expect("failed to parse");
         assert!(pattern.steps[..2].iter().all(|e| matches!(e, DomainPatternPart::Wildcard(DomainPatternWildcard { multi: false, optional: false }))));
+    }
+
+    #[test]
+    fn test_odd_corner_cases()
+    {
+        let pattern: DomainPattern = "*".try_into().expect("failed to parse");
+        assert!(pattern.matches(""));
+        assert!(pattern.matches("tld"));
+        assert!(!pattern.matches("domain.tld"));
+
+        let pattern: DomainPattern = "**".try_into().expect("failed to parse");
+        assert!(pattern.matches(""));
+        assert!(pattern.matches("tld"));
+        assert!(pattern.matches("domain.tld"));
+
+        let pattern: DomainPattern = "+".try_into().expect("failed to parse");
+        assert!(!pattern.matches(""));
+        assert!(pattern.matches("tld"));
+        assert!(!pattern.matches("domain.tld"));
+
+        let pattern: DomainPattern = "*.+".try_into().expect("failed to parse");
+        assert!(!pattern.matches(""));
+        assert!(pattern.matches("tld"));
+        assert!(pattern.matches("domain.tld"));
+    }
+
+    #[test]
+    fn test_readme_example() {
+        let pattern: DomainPattern = "domain.tld".try_into().expect("failed to parse");
+        assert!(pattern.matches("domain.tld"));
+        assert!(!pattern.matches("sub.domain.tld"));
+        assert!(!pattern.matches("sub.sub.domain.tld"));
+
+        let pattern: DomainPattern = "*.domain.tld".try_into().expect("failed to parse");
+        assert!(pattern.matches("domain.tld"));
+        assert!(pattern.matches("sub.domain.tld"));
+        assert!(!pattern.matches("sub.sub.domain.tld"));
+
+        let pattern: DomainPattern = "+.domain.tld".try_into().expect("failed to parse");
+        assert!(!pattern.matches("domain.tld"));
+        assert!(pattern.matches("sub.domain.tld"));
+        assert!(!pattern.matches("sub.sub.domain.tld"));
+
+        let pattern: DomainPattern = "**.domain.tld".try_into().expect("failed to parse");
+        assert!(pattern.matches("domain.tld"));
+        assert!(pattern.matches("sub.domain.tld"));
+        assert!(pattern.matches("sub.sub.domain.tld"));
+
+        let pattern: DomainPattern = "**+.domain.tld".try_into().expect("failed to parse");
+        assert!(!pattern.matches("domain.tld"));
+        assert!(pattern.matches("sub.domain.tld"));
+        assert!(pattern.matches("sub.sub.domain.tld"));
     }
 }
